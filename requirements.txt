@@ -1,2 +1,6 @@
+# Test dependencies
+pytest
+httpx
+pytest-asyncio
 fastapi
 uvicorn
