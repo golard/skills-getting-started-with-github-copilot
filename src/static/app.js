@@ -27,15 +27,43 @@ document.addEventListener("DOMContentLoaded", () => {
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
           <div class="activity-card-participants">
             <div class="activity-card-participants-title">Teilnehmer:</div>
-            <ul class="activity-card-participants-list">
+            <ul class="activity-card-participants-list no-bullets" data-activity="${encodeURIComponent(name)}">
               ${
                 details.participants.length > 0
-                  ? details.participants.map(p => `<li>${p}</li>`).join("")
+                  ? details.participants.map(p =>
+                      `<li style="display:flex;align-items:center;list-style:none;">
+                        <span>${p}</span>
+                        <span class="delete-participant" title="Entfernen" style="cursor:pointer;margin-left:8px;">🗑️</span>
+                      </li>`
+                    ).join("")
                   : '<li><em>Keine Teilnehmer</em></li>'
               }
             </ul>
           </div>
         `;
+
+        // Event-Delegation für Löschen
+        const ul = activityCard.querySelector(".activity-card-participants-list");
+        ul.addEventListener("click", async function(e) {
+          if (e.target.classList.contains("delete-participant")) {
+            const li = e.target.closest("li");
+            const participantName = li.querySelector("span").textContent;
+            const activityName = decodeURIComponent(ul.getAttribute("data-activity"));
+            // API-Request zum Entfernen
+            try {
+              const response = await fetch(`/activities/${encodeURIComponent(activityName)}/unregister?name=${encodeURIComponent(participantName)}`, {
+                method: "POST"
+              });
+              if (response.ok) {
+                li.remove();
+              } else {
+                alert("Fehler beim Entfernen des Teilnehmers.");
+              }
+            } catch (err) {
+              alert("Fehler beim Entfernen des Teilnehmers.");
+            }
+          }
+        });
 
         activitiesList.appendChild(activityCard);
 
@@ -72,6 +100,8 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        // Aktivitätenliste neu laden
+        await fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
